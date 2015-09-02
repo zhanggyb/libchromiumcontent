@@ -72,15 +72,21 @@ def download_source_tarball(version):
   tar_name = dir_name + '.tar'
   xz_name = tar_name + '.xz'
   url = TARBALL_URL.format(TARBALL_REPO, version)
-  with open(xz_name, 'wb+') as t:
-    with contextlib.closing(urllib2.urlopen(url)) as u:
-      while True:
-        chunk = u.read(1024*1024)
-        if not len(chunk):
+  file_exist = False
+  
+  if os.path.exists(xz_name) and os.path.isfile(xz_name):
+    file_exist = subprocess.call([xz(), '-dt', xz_name]) == 0
+
+  if not file_exist:
+    with open(xz_name, 'wb+') as t:
+      with contextlib.closing(urllib2.urlopen(url)) as u:
+        while True:
+          chunk = u.read(1024*1024)
+          if not len(chunk):
             break
-        sys.stderr.write('.')
-        sys.stderr.flush()
-        t.write(chunk)
+          sys.stderr.write('.')
+          sys.stderr.flush()
+          t.write(chunk)
 
   sys.stderr.write('\nExtracting...\n')
   sys.stderr.flush()

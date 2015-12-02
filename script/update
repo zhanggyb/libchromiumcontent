@@ -72,8 +72,9 @@ def download_source_tarball(version):
   tar_name = dir_name + '.tar'
   xz_name = tar_name + '.xz'
   url = TARBALL_URL.format(TARBALL_REPO, version)
+
+  # Check if the source tarball is already in current path
   file_exist = False
-  
   if os.path.exists(xz_name) and os.path.isfile(xz_name):
     file_exist = subprocess.call([xz(), '-dt', xz_name]) == 0
 
@@ -103,9 +104,8 @@ def download_source_tarball(version):
 
 def install_sysroot():
   for arch in ('arm', 'amd64', 'i386'):
-    install = os.path.join(SRC_DIR, 'chrome', 'installer', 'linux',
-                           'sysroot_scripts',
-                           'install-debian.wheezy.sysroot.py')
+    install = os.path.join(SRC_DIR, 'build', 'linux', 'sysroot_scripts',
+                           'install-sysroot.py')
     subprocess.check_call([install, '--arch', arch])
 
 
@@ -135,6 +135,12 @@ def gyp_env(target_arch, component):
   elif sys.platform == 'linux2' and target_arch in ('arm', 'ia32'):
     # ARM build requires cross compilation.
     env['GYP_CROSSCOMPILE'] = '1'
+
+  # Whether to build for Mac App Store.
+  if env.has_key('MAS_BUILD'):
+    gyp_defines += ' mac_mas_build=1'
+  else:
+    gyp_defines += ' mac_mas_build=0'
 
   # Always build on 64-bit machine.
   gyp_defines += ' host_arch=x64'

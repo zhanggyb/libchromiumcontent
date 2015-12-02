@@ -52,7 +52,9 @@ EXCLUDE_STATIC_LIBRARIES = {
 GYPI_TEMPLATE = """\
 {
   'variables': {
-    'libchromiumcontent_root_dir': %(src)s,
+    'libchromiumcontent_src_dir': %(src)s,
+    'libchromiumcontent_shared_libraries_dir': %(shared_libraries_dir)s,
+    'libchromiumcontent_static_libraries_dir': %(static_libraries_dir)s,
     'libchromiumcontent_shared_libraries': %(shared_libraries)s,
     'libchromiumcontent_shared_v8_libraries': %(shared_v8_libraries)s,
     'libchromiumcontent_static_libraries': %(static_libraries)s,
@@ -62,13 +64,15 @@ GYPI_TEMPLATE = """\
 """
 
 
-def main(target_file, shared_src, static_src):
+def main(target_file, code_dir, shared_dir, static_dir):
   (shared_libraries, shared_v8_libraries) = searh_files(
-      shared_src, SHARED_LIBRARY_SUFFIX, EXCLUDE_SHARED_LIBRARIES)
+      shared_dir, SHARED_LIBRARY_SUFFIX, EXCLUDE_SHARED_LIBRARIES)
   (static_libraries, static_v8_libraries) = searh_files(
-      static_src, STATIC_LIBRARY_SUFFIX, EXCLUDE_STATIC_LIBRARIES)
+      static_dir, STATIC_LIBRARY_SUFFIX, EXCLUDE_STATIC_LIBRARIES)
   content = GYPI_TEMPLATE % {
-    'src': repr(os.path.abspath(os.path.dirname(target_file))),
+    'src': repr(os.path.abspath(code_dir)),
+    'shared_libraries_dir': repr(os.path.abspath(shared_dir)),
+    'static_libraries_dir': repr(os.path.abspath(static_dir)),
     'shared_libraries': shared_libraries,
     'shared_v8_libraries': shared_v8_libraries,
     'static_libraries': static_libraries,
@@ -91,4 +95,4 @@ def is_v8_library(p):
 
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1], sys.argv[2], sys.argv[3]))
+  sys.exit(main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]))

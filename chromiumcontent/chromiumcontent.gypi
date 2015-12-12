@@ -88,9 +88,14 @@
           '-Wl,--detect-odr-violations',
         ],
       }],
+      ['mac_mas_build==1', {
+        'defines': [
+          'MAS_BUILD',
+        ],
+      }],
     ],
     'target_conditions': [
-      ['_type=="static_library" and _toolset=="target" and OS=="linux" and component=="static_library"', {
+      ['_type=="static_library" and _toolset=="target" and OS=="linux"', {
         'standalone_static_library': 1,
       }],
       ['_target_name in <(v8_libraries) + <(icu_libraries)', {
@@ -122,7 +127,7 @@
           },
         },
       }],
-      ['_target_name in ["gtk2ui", "devtools_http_handler", "devtools_discovery", "http_server"]', {
+      ['_target_name in ["gtk2ui"]', {
         'type': 'static_library',
         'standalone_static_library': 1,
         'cflags': [

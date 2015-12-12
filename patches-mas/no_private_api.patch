@@ -1,0 +1,139 @@
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index ea4db4a..1472d11 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -19,10 +19,12 @@
+ #include "content/public/common/content_client.h"
+ #import "ui/accessibility/platform/ax_platform_node_mac.h"
+ 
++#ifndef MAS_BUILD
+ // See http://openradar.appspot.com/9896491. This SPI has been tested on 10.5,
+ // 10.6, and 10.7. It allows accessibility clients to observe events posted on
+ // this object.
+ extern "C" void NSAccessibilityUnregisterUniqueIdForUIElement(id element);
++#endif
+ 
+ using ui::AXNodeData;
+ using content::AccessibilityMatchPredicate;
+@@ -420,7 +422,9 @@ bool InitializeAccessibilityTreeSearch(
+ 
+ - (void)detach {
+   if (browserAccessibility_) {
++#ifndef MAS_BUILD
+     NSAccessibilityUnregisterUniqueIdForUIElement(self);
++#endif
+     browserAccessibility_ = NULL;
+   }
+ }
+diff --git a/content/common/sandbox_mac.mm b/content/common/sandbox_mac.mm
+index 4dc7d94..78ee602 100644
+--- a/content/common/sandbox_mac.mm
++++ b/content/common/sandbox_mac.mm
+@@ -41,6 +41,7 @@ extern "C" {
+ #include "ui/base/layout.h"
+ #include "ui/gl/gl_surface.h"
+ 
++#ifndef MAS_BUILD
+ extern "C" {
+ void CGSSetDenyWindowServerConnections(bool);
+ void CGSShutdownServerConnections();
+@@ -54,6 +55,7 @@ int sandbox_apply(void* profile);
+ void sandbox_free_params(void* params);
+ void sandbox_free_profile(void* profile);
+ };
++#endif
+ 
+ namespace content {
+ namespace {
+@@ -154,15 +156,20 @@ bool SandboxCompiler::InsertStringParam(const std::string& key,
+ void SandboxCompiler::FreeSandboxResources(void* profile,
+                                            void* params,
+                                            char* error) {
++#ifndef MAS_BUILD
+   if (error)
+     sandbox_free_error(error);
+   if (params)
+     sandbox_free_params(params);
+   if (profile)
+     sandbox_free_profile(profile);
++#endif
+ }
+ 
+ bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
++#ifdef MAS_BUILD
++  return false;
++#else
+   char* error_internal = nullptr;
+   void* profile = nullptr;
+   void* params = nullptr;
+@@ -203,6 +210,7 @@ bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
+   int result = sandbox_apply(profile);
+   FreeSandboxResources(profile, params, error_internal);
+   return result == 0;
++#endif
+ }
+ 
+ // static
+@@ -400,8 +408,10 @@ void Sandbox::SandboxWarmup(int sandbox_type) {
+     // 10.8 and higher because doing it on earlier OSes causes layout tests to
+     // fail <http://crbug.com/397642#c48>. This may cause two log messages to
+     // be printed to the system logger on certain OS versions.
++#ifndef MAS_BUILD
+     CGSSetDenyWindowServerConnections(true);
+     CGSShutdownServerConnections();
++#endif
+   }
+ }
+ 
+diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
+index 4300dfc..7536c96 100644
+--- a/net/dns/dns_config_service_posix.cc
++++ b/net/dns/dns_config_service_posix.cc
+@@ -202,6 +202,7 @@ class DnsConfigServicePosix::Watcher {
+ 
+   bool Watch() {
+     bool success = true;
++#ifndef MAS_BUILD
+     if (!config_watcher_.Watch(base::Bind(&Watcher::OnConfigChanged,
+                                           base::Unretained(this)))) {
+       LOG(ERROR) << "DNS config watch failed to start.";
+@@ -221,6 +222,7 @@ class DnsConfigServicePosix::Watcher {
+                                 DNS_CONFIG_WATCH_MAX);
+     }
+ #endif
++#endif
+     return success;
+   }
+ 
+diff --git a/ui/gfx/font_fallback_mac.mm b/ui/gfx/font_fallback_mac.mm
+index d312f8b..7e5f5bb 100644
+--- a/ui/gfx/font_fallback_mac.mm
++++ b/ui/gfx/font_fallback_mac.mm
+@@ -13,6 +13,7 @@
+ #import "base/mac/mac_util.h"
+ #import "base/strings/sys_string_conversions.h"
+ 
++#ifndef MAS_BUILD
+ // CTFontCopyDefaultCascadeListForLanguages() doesn't exist in the 10.6 SDK.
+ // There is only the following. It doesn't exist in the public header files,
+ // but is an exported symbol so should always link.
+@@ -39,6 +40,7 @@ CFArrayRef CTFontCopyDefaultCascadeListForLanguagesWrapper(
+ }
+ 
+ }  // namespace
++#endif
+ 
+ namespace gfx {
+ 
+@@ -78,7 +80,11 @@ std::vector<std::string> GetFallbackFontFamilies(
+       stringArrayForKey:@"AppleLanguages"];
+   CFArrayRef languages_cf = base::mac::NSToCFCast(languages);
+   base::ScopedCFTypeRef<CFArrayRef> cascade_list(
++#ifndef MAS_BUILD
+       CTFontCopyDefaultCascadeListForLanguagesWrapper(base_font, languages_cf));
++#else
++      CTFontCopyDefaultCascadeListForLanguages(base_font, languages_cf));
++#endif
+ 
+   std::vector<std::string> fallback_fonts;
+ 
